@@ -1,7 +1,7 @@
 const jobs = new Map();
 
 function createJob(emails) {
-  const job_id = "job_" + Date.now();
+  const jobId = "job_" + Date.now();
   jobs.set(jobId, {
     id: jobId,
     status: "pending",

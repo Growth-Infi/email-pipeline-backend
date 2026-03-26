@@ -2,7 +2,9 @@ import express from "express";
 import { Router } from "express";
 const router = Router();
 
-import { createJob, updateJob, getJob, jobs } from "../store/jobStore.js";
+import jobStore from "../store/jobStore.js";
+
+const { createJob, updateJob, getJob, jobs } = jobStore;
 import { startVerification } from "../services/brandnavService.js";
 
 router.post("/start-job", async (req, res) => {
@@ -49,7 +51,7 @@ router.post("/webhook/brandnav", (req, res) => {
 
     for (let job of jobs?.values?.() || []) {
       if (job.brandnavRequestId === verificationRequestId) {
-        foundJob = true;
+        foundJob = job;
         break;
       }
     }
@@ -63,7 +65,7 @@ router.post("/webhook/brandnav", (req, res) => {
     });
     console.log("Webhook received for job:", foundJob.id);
     return res.sendStatus(200);
-  } catch (error) {
+  } catch (err) {
     console.error(err.message);
     return res.sendStatus(500);
   }
