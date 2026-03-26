@@ -22,12 +22,10 @@ function updateJob(jobId, data) {
 function getJob(jobId) {
   return jobs.get(jobId);
 }
-function allJobs() {
-  return jobs;
-}
+
 export default {
   createJob,
   updateJob,
   getJob,
-  allJobs,
+  jobs,
 };
