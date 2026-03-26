@@ -20,6 +20,4 @@ async function startVerification(emails, webhookUrl) {
 
   return res.data;
 }
-export default {
-  startVerification,
-};
+export { startVerification };
