@@ -1,0 +1,37 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.*
+src/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build / output
+dist/
+build/
+
+# Coverage
+coverage/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Optional: lock files (uncomment if you don’t want them tracked)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
