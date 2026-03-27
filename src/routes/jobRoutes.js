@@ -18,16 +18,18 @@ router.post("/start-job", async (req, res) => {
       emails,
       `${process.env.BASE_URL}/webhook/brandnav`,
     );
+    const verificationId = response.data.verification_request_id;
+    console.log("Started job and got verification_request_id ", verificationId);
 
     // 3. store request id
     updateJob(job.id, {
-      brandnavRequestId: response.verificationRequestId,
+      brandnavRequestId: verificationId,
       status: "processing",
     });
 
     return res.json({
       jobId: job.id,
-      brandnavRequestId: response.verificationRequestId,
+      brandnavRequestId: verificationId,
     });
   } catch (err) {
     console.error(err.message);
@@ -42,28 +44,36 @@ router.get("/job-status/:id", (req, res) => {
 
   return res.json(job);
 });
-
 router.post("/webhook/brandnav", (req, res) => {
   try {
     const data = req.body;
-    const verificationRequestId = data.verificationRequestId;
+
+    console.log("Webhook payload:", data);
+
+    // ✅ correct field
+    const requestId = data.request_id;
+
     let foundJob = null;
 
-    for (let job of jobs?.values?.() || []) {
-      if (job.brandnavRequestId === verificationRequestId) {
+    for (let job of jobs.values()) {
+      if (job.brandnavRequestId === requestId) {
         foundJob = job;
         break;
       }
     }
+
     if (!foundJob) {
-      console.log("No job found for webhook");
+      console.log("No job found for webhook, request_id:", requestId);
       return res.sendStatus(200);
     }
+
     updateJob(foundJob.id, {
-      status: "brandnav_completed",
+      status: data.status || "brandnav_completed",
       results: data.results,
     });
+
     console.log("Webhook received for job:", foundJob.id);
+
     return res.sendStatus(200);
   } catch (err) {
     console.error(err.message);
