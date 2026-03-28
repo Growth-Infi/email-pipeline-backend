@@ -1,11 +1,11 @@
 import express from "express";
 import { Router } from "express";
 const router = Router();
-
 import jobStore from "../store/jobStore.js";
-
 const { createJob, updateJob, getJob, jobs } = jobStore;
 import { startVerification } from "../services/brandnavService.js";
+import { startReoonVerification } from "../services/reoonService.js";
+import { pollReoon } from "../utils/reoonPoller.js";
 
 router.post("/start-job", async (req, res) => {
   try {
@@ -42,15 +42,15 @@ router.get("/job-status/:id", (req, res) => {
 
   if (!job) return res.status(404).json({ error: "Job not found" });
 
-  return res.json(job);
+  return res.json({ ...job, results: job.finalResults || job.results });
 });
-router.post("/webhook/brandnav", (req, res) => {
+
+router.post("/webhook/brandnav", async (req, res) => {
   try {
     const data = req.body;
 
-    console.log("Webhook payload:", data);
+    console.log("Webhook payload from brandnav:", data);
 
-    // ✅ correct field
     const requestId = data.request_id;
 
     let foundJob = null;
@@ -68,12 +68,33 @@ router.post("/webhook/brandnav", (req, res) => {
     }
 
     updateJob(foundJob.id, {
-      status: data.status || "brandnav_completed",
+      status: "brandnav_completed",
       results: data.results,
     });
+    console.log("Brandnav completed for job:", foundJob.id);
 
-    console.log("Webhook received for job:", foundJob.id);
+    const nonValidEmails = data.results
+      .filter((r) => r.status !== "valid")
+      .map((r) => r.email);
 
+    if (nonValidEmails.length === 0) {
+      updateJob(foundJob.id, {
+        status: "completed",
+        finalResults: data.results,
+      });
+      return res.sendStatus(200);
+    }
+
+    const reoonResponse = await startReoonVerification(nonValidEmails);
+
+    updateJob(foundJob.id, {
+      status: "reoon_processing",
+      reoonTaskId: reoonResponse.task_id,
+    });
+
+    console.log("Reoon started:", reoonResponse.task_id);
+
+    pollReoon(foundJob.id, reoonResponse.task_id);
     return res.sendStatus(200);
   } catch (err) {
     console.error(err.message);

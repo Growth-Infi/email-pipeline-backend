@@ -7,7 +7,9 @@ function createJob(emails) {
     status: "pending",
     emails,
     brandnavRequestId: null,
+    reoonTaskId: null,
     results: null,
+    finalResults: null,
     createdAt: new Date(),
   });
 
