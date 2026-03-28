@@ -1,4 +1,4 @@
-import { getReoonResult } from "../services/reoonService";
+import { getReoonResult } from "../services/reoonService.js";
 import jobStore from "../store/jobStore.js";
 
 const { updateJob, getJob } = jobStore;
