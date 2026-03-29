@@ -7,9 +7,25 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// const corsOptions = {
+//   origin: "https://pipeline-tools.vercel.app/",
+//   optionsSuccessStatus: 200,
+// };
+// app.use(cors(corsOptions));
+
 app.use(express.json());
-app.use("/api", jobRoutes);
+
+const verifyApiKey = (req, res, next) => {
+  const userKey = req.headers["x-api-key"];
+  console.log("API Key attached by frontend ", userKey);
+
+  const serverKey = process.env.BACKEND_SECRET_KEY;
+  if (!userKey || userKey !== serverKey) {
+    return res.status(401).json({ message: "Unauthorized: Invalid API Key" });
+  }
+  next();
+};
+app.use("/api", verifyApiKey, jobRoutes);
 
 app.get("/", (req, res) => {
   res.send("Pipeline backend running");
