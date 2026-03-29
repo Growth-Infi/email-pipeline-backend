@@ -26,6 +26,9 @@ const verifyApiKey = (req, res, next) => {
   }
   next();
 };
+//  Webhook will bypass without secret auth
+app.use("/api/webhook/brandnav", jobRoutes);
+
 app.use("/api", verifyApiKey, jobRoutes);
 
 app.get("/", (req, res) => {
