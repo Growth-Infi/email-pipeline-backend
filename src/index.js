@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import jobRoutes from "./routes/jobRoutes.js";
-
+import webhookRoutes from "./routes/webhookRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -26,10 +26,9 @@ const verifyApiKey = (req, res, next) => {
   }
   next();
 };
-//  Webhook will bypass without secret auth
-app.use("/api/webhook/brandnav", jobRoutes);
 
-app.use("/api", verifyApiKey, jobRoutes);
+app.use("/api/webhook", webhookRoutes); // no auth
+app.use("/api", verifyApiKey, jobRoutes); // protected
 
 app.get("/", (req, res) => {
   res.send("Pipeline backend running");
