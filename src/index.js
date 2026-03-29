@@ -12,6 +12,7 @@ const app = express();
 //   optionsSuccessStatus: 200,
 // };
 // app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(express.json());
 
