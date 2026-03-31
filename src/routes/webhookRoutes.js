@@ -1,9 +1,8 @@
 import { Router } from "express";
-const router = Router();
-import jobStore from "../store/jobStore.js";
-const { updateJob, jobs } = jobStore;
+import { supabase } from "../lib/supabase.js";
 import { startReoonVerification } from "../services/reoonService.js";
-import { pollReoon } from "../utils/reoonPoller.js";
+
+const router = Router();
 
 router.post("/brandnav", async (req, res) => {
   try {
@@ -14,48 +13,40 @@ router.post("/brandnav", async (req, res) => {
 
     const requestId = data.request_id;
 
-    let foundJob = null;
+    const { data: job } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("brandnav_request_id", requestId)
+      .single();
+    if (!job) return res.sendStatus(200);
 
-    for (let job of jobs.values()) {
-      if (job.brandnavRequestId === requestId) {
-        foundJob = job;
-        break;
-      }
-    }
+    await supabase
+      .from("jobs")
+      .update({ status: "brandav_completed", results: data.results })
+      .eq("id", job.id);
 
-    if (!foundJob) {
-      console.log("No job found for webhook, request_id:", requestId);
-      return res.sendStatus(200);
-    }
-
-    updateJob(foundJob.id, {
-      status: "brandnav_completed",
-      results: data.results,
-    });
-    console.log("Brandnav completed for job:", foundJob.id);
+    console.log("Brandnav completed for job:", job.id);
 
     const nonValidEmails = data.results
       .filter((r) => r.status !== "valid")
       .map((r) => r.email);
 
     if (nonValidEmails.length === 0) {
-      updateJob(foundJob.id, {
-        status: "completed",
-        finalResults: data.results,
-      });
+      await supabase
+        .from("jobs")
+        .update({ status: "completed", final_results: data.results })
+        .eq("id", jobId);
       return res.sendStatus(200);
     }
 
     const reoonResponse = await startReoonVerification(nonValidEmails);
-
-    updateJob(foundJob.id, {
-      status: "reoon_processing",
-      reoonTaskId: reoonResponse.task_id,
-    });
-
-    console.log("Reoon started:", reoonResponse.task_id);
-
-    pollReoon(foundJob.id, reoonResponse.task_id);
+    await supabase
+      .from("jobs")
+      .update({
+        status: "reoon_processing",
+        reoon_task_id: reoonResponse.task_id,
+      })
+      .eq("id", job.id);
     return res.sendStatus(200);
   } catch (err) {
     console.error(err.message);

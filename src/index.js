@@ -17,11 +17,11 @@ app.use(cors());
 app.use(express.json());
 
 const verifyApiKey = (req, res, next) => {
-  const userKey = req.headers["x-api-key"];
-  console.log("API Key attached by frontend ", userKey);
+  const APIKey = req.headers["x-api-key"];
+  console.log("API Key attached by frontend ", APIKey);
 
   const serverKey = process.env.BACKEND_SECRET_KEY;
-  if (!userKey || userKey !== serverKey) {
+  if (!APIKey || APIKey !== serverKey) {
     return res.status(401).json({ message: "Unauthorized: Invalid API Key" });
   }
   next();
