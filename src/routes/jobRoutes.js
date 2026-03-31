@@ -6,7 +6,7 @@ import { getReoonResult } from "../services/reoonService.js";
 
 router.post("/start-job", async (req, res) => {
   try {
-    const { emails, userId } = req.body;
+    const { emails } = req.body;
     if (!emails || !emails.length) {
       return res.status(400).json({ error: "Emails required" });
     }
@@ -14,7 +14,7 @@ router.post("/start-job", async (req, res) => {
 
     await supabase
       .from("jobs")
-      .insert({ id: jobId, user_id: userId, status: "pending", emails });
+      .insert({ id: jobId, status: "pending", emails });
 
     const response = await startVerification(
       emails,
