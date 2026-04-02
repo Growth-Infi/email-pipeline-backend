@@ -9,7 +9,7 @@ const trelloToken = process.env.TRELLO_TOKEN
 const trelloListId = process.env.TRELLO_LIST_ID
 
 const openai = new OpenAI({
-    apiKey: config.genaiApiKey,
+    apiKey: openaiApiKey,
 });
 
 export async function fetchTranscript(transcriptId) {
@@ -28,7 +28,7 @@ export async function fetchTranscript(transcriptId) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${firefliesApiKey}`
+            "Authorization": `Bearer ${fathomApiKey}`
         },
         body: JSON.stringify({ query, variables: { id: transcriptId } })
     })
@@ -88,3 +88,7 @@ export async function createTrelloCards(tasks) {
         }
     }
 }
+
+
+
+
