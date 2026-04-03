@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 
 const corsOptions = {
-  origin: "https://pipeline-tools.vercel.app/",
+  origin: "https://pipeline-tools.vercel.app",
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
