@@ -18,6 +18,8 @@ app.use(express.json());
 
 const verifyApiKey = (req, res, next) => {
   const APIKey = req.headers["x-api-key"];
+  console.log("SERVER KEY:", JSON.stringify(process.env.BACKEND_SECRET_KEY));
+  console.log("REQ KEY:", JSON.stringify(APIKey));
   console.log("API Key attached by frontend ", APIKey);
 
   const serverKey = process.env.BACKEND_SECRET_KEY;
