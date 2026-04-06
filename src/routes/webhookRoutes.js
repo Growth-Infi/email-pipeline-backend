@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase.js";
+import supabase from "../lib/supabase.js";
 import { startReoonVerification } from "../services/reoonService.js";
 
 const router = Router();

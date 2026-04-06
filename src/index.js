@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import jobRoutes from "./routes/jobRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
+
 dotenv.config();
 
 const app = express();

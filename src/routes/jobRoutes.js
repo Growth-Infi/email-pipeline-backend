@@ -1,15 +1,18 @@
 import { Router } from "express";
 const router = Router();
-import { supabase } from "../lib/supabase.js";
+import supabase from "../lib/supabase.js";
 import { startVerification } from "../services/brandnavService.js";
 import { getReoonResult } from "../services/reoonService.js";
+import axios from "axios";
 
+// ================= START JOB =================
 router.post("/start-job", async (req, res) => {
   try {
     const { emails } = req.body;
     if (!emails || !emails.length) {
       return res.status(400).json({ error: "Emails required" });
     }
+
     const jobId = "job_" + Date.now();
 
     await supabase
@@ -20,12 +23,17 @@ router.post("/start-job", async (req, res) => {
       emails,
       `${process.env.BASE_URL}/webhook/brandnav`,
     );
+
     const verificationId = response.data.verification_request_id;
-    console.log("Started job and got verification_request_id ", verificationId);
+
+    console.log("Started job → brandnav id:", verificationId);
 
     await supabase
       .from("jobs")
-      .update({ brandnav_request_id: verificationId, status: "processing" })
+      .update({
+        brandnav_request_id: verificationId,
+        status: "processing",
+      })
       .eq("id", jobId);
 
     return res.json({ jobId });
@@ -35,6 +43,7 @@ router.post("/start-job", async (req, res) => {
   }
 });
 
+// ================= JOB STATUS =================
 router.get("/job-status/:id", async (req, res) => {
   try {
     const { data: job, error } = await supabase
@@ -47,6 +56,29 @@ router.get("/job-status/:id", async (req, res) => {
       return res.status(404).json({ error: "Job not found" });
     }
 
+    // BRANDNAV PROGRESS
+    let brandnavProgress = null;
+
+    if (job.brandnav_request_id && job.status === "processing") {
+      try {
+        const response = await axios.get(
+          `${process.env.BRANDNAV_URL}/api/verifier/verification/${job.brandnav_request_id}/progress`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.BRANDNAV_API_KEY}`,
+            },
+          },
+        );
+
+        brandnavProgress = response.data?.data;
+
+        console.log("BrandNav progress:", brandnavProgress?.progress_percent);
+      } catch (err) {
+        console.error("BrandNav progress fetch failed:", err.message);
+      }
+    }
+
+    //  REOON POLLING
     if (
       job.status === "reoon_processing" &&
       (!job.last_checked_at ||
@@ -54,10 +86,9 @@ router.get("/job-status/:id", async (req, res) => {
     ) {
       await supabase
         .from("jobs")
-        .update({
-          last_checked_at: new Date(),
-        })
+        .update({ last_checked_at: new Date() })
         .eq("id", job.id);
+
       const reoonData = await getReoonResult(job.reoon_task_id);
 
       if (reoonData.status === "completed") {
@@ -75,13 +106,28 @@ router.get("/job-status/:id", async (req, res) => {
         return res.json({
           ...job,
           status: "completed",
+          progress: 100,
+          finalResults: finalResults,
           results: finalResults,
         });
       }
     }
 
+    let progress = 0;
+
+    if (brandnavProgress) {
+      progress = Math.floor(brandnavProgress.progress_percent * 0.6);
+    } else if (job.status === "brandav_completed") {
+      progress = 60;
+    } else if (job.status === "reoon_processing") {
+      progress = 60 + Math.floor(Math.random() * 20); // 60–80
+    } else if (job.status === "completed") {
+      progress = 100;
+    }
+
     return res.json({
       ...job,
+      progress,
       results: job.final_results || job.results,
     });
   } catch (err) {
@@ -102,10 +148,9 @@ function transformReoonResults(resultsObj) {
       message: r.status,
     });
   }
-  console.log("Array formed after transforming response fromm Reoon ", arr);
-
   return arr;
 }
+
 function normalizeStatus(status) {
   if (status === "safe") return "valid";
   if (status === "invalid") return "invalid";
@@ -114,11 +159,12 @@ function normalizeStatus(status) {
 
 function mergeResults(brandnavResults, reoonResults) {
   const map = new Map();
+
   brandnavResults.forEach((r) => {
     map.set(r.email, r);
   });
+
   reoonResults.forEach((r) => {
-    //overwrite results from reoon
     map.set(r.email, r);
   });
 
