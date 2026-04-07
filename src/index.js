@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import jobRoutes from "./routes/jobRoutes.js";
-import tasksRoutes from "./routes/meetingTaskRoutes.js"
+import tasksRoutes from "./routes/meetingTaskRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 
 dotenv.config();
@@ -33,7 +33,7 @@ const verifyApiKey = (req, res, next) => {
 
 app.use("/api/webhook", webhookRoutes); // no auth
 app.use("/api", verifyApiKey, jobRoutes); // protected
-app.use("/api/tasks", tasksRoutes);
+app.use("/api/tasks", verifyApiKey, tasksRoutes);
 
 app.get("/", (req, res) => {
   res.send("Pipeline backend running");
