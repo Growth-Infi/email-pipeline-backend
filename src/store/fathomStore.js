@@ -1,3 +1,6 @@
+// This module is currently not in use.
+// This is for future implementations of fathom to trello pipeline
+
 import { Fathom } from 'fathom-typescript';
 
 const tokenStore = new Map(); // replace with DB in prod
