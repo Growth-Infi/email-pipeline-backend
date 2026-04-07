@@ -34,20 +34,17 @@ router.get("/fathom/meetings", async (req, res) => {
 
 
 
-const trelloKey = process.env.TRELLO_KEY || "3e7b400a2c72522f0cae4b66d52a5ce6"
+const trelloKey = process.env.TRELLO_KEY
 const trelloToken = process.env.TRELLO_TOKEN
 const trelloBase = "https://api.trello.com/1"
 
 // get all boards
 router.get("/trello/boards", async (req, res) => {
-    console.log(trelloKey, " - and - ", trelloToken)
-
     try {
         const response = await fetch(`${trelloBase}/members/me/boards?key=${trelloKey}&token=${trelloToken}`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' }
         })
-        console.log(response)
         const data = await response.json()
 
         // slim it down, frontend only needs id and name
