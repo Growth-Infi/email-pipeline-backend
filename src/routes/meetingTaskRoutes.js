@@ -11,10 +11,9 @@ router.get("/fathom/meetings", async (req, res) => {
     // const fathom = getFathomClient(userId)
     // const result = await fathom.listMeetings({
     // });
-    const { cursor, limit = 10 } = req.query
+    const { cursor } = req.query
     try {
         const url = new URL("https://api.fathom.ai/external/v1/meetings?calendar_invitees_domains_type=all&include_action_items=true")
-        url.searchParams.set("limit", limit)
         if (cursor) url.searchParams.set("cursor", cursor)
         let data = await fetch(url.toString(), {
             method: 'GET',
