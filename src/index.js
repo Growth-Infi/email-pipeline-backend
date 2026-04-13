@@ -13,8 +13,8 @@ const corsOptions = {
   origin: "https://pipeline-tools.vercel.app",
   optionsSuccessStatus: 200,
 };
-app.use(cors(corsOptions));
-// app.use(cors());
+// app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(express.json());
 
@@ -33,6 +33,7 @@ const verifyApiKey = (req, res, next) => {
 
 app.use("/api/webhook", webhookRoutes); // no auth
 app.use("/api/tasks", tasksRoutes);
+app.use("/api", verifyApiKey, jobRoutes); // protected
 
 app.use("/api", verifyApiKey, jobRoutes); // protected
 

@@ -11,25 +11,30 @@ router.get("/fathom/meetings", async (req, res) => {
     // const fathom = getFathomClient(userId)
     // const result = await fathom.listMeetings({
     // });
-    let result
+    const { cursor, limit = 10 } = req.query
     try {
-        result = await fetch("https://api.fathom.ai/external/v1/meetings?calendar_invitees_domains_type=all&include_action_items=true", {
+        const url = new URL("https://api.fathom.ai/external/v1/meetings?calendar_invitees_domains_type=all&include_action_items=true")
+        url.searchParams.set("limit", limit)
+        if (cursor) url.searchParams.set("cursor", cursor)
+        let data = await fetch(url.toString(), {
             method: 'GET',
             headers: {
                 'X-Api-Key': `${process.env.FATHOM_API_KEY}`
             }
         })
-        result = await result.json()
-        result = result.items.map(meeting => ({
+        data = await data.json()
+        const result = (data.items || []).map(meeting => ({
             recording_id: meeting.recording_id,
             title: meeting.title,
             created_at: meeting.created_at,
             action_items: meeting.action_items
         }))
+
+        return res.status(200).json({ result, nextCursor: data.next_cursor || null })
     } catch (error) {
-        throw error
+        console.error(error)
+        return res.status(500).json({ message: "Failed to fetch meetings" })
     }
-    return res.status(200).json({ result })
 })
 
 
@@ -40,6 +45,7 @@ const trelloBase = "https://api.trello.com/1"
 
 // get all boards
 router.get("/trello/boards", async (req, res) => {
+
     try {
         const response = await fetch(`${trelloBase}/members/me/boards?key=${trelloKey}&token=${trelloToken}`, {
             method: 'GET',
