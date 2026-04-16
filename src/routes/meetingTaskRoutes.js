@@ -29,7 +29,7 @@ router.get("/fathom/meetings", async (req, res) => {
             action_items: meeting.action_items
         }))
 
-        return res.status(200).json({ result, nextCursor: data.next_cursor || null })
+        return res.status(200).json({ result, nextCursor: data.next_cursor || null, version: "v2", })
     } catch (error) {
         console.error(error)
         return res.status(500).json({ message: "Failed to fetch meetings" })
@@ -58,7 +58,7 @@ router.get("/trello/boards", async (req, res) => {
             name: board.name
         }))
 
-        return res.status(200).json({ version: "v2", boards })
+        return res.status(200).json({ boards })
     } catch (error) {
         console.error("Error fetching boards:", error)
         return res.status(500).json({ message: "Failed to fetch boards" })
