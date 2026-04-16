@@ -58,7 +58,7 @@ router.get("/trello/boards", async (req, res) => {
             name: board.name
         }))
 
-        return res.status(200).json({ boards })
+        return res.status(200).json({ version: "v2", boards })
     } catch (error) {
         console.error("Error fetching boards:", error)
         return res.status(500).json({ message: "Failed to fetch boards" })
