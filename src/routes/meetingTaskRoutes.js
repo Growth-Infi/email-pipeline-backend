@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { Fathom } from 'fathom-typescript';
+import { Client } from "@notionhq/client"
+
 import { getFathomClient, getTokens, saveTokens } from "../store/fathomStore.js";
+import { compressTranscript, extractTasksWithLLM, findClient, toLLMFormat } from "../services/meetingTaskService.js";
 
 const router = Router()
 
@@ -36,7 +39,91 @@ router.get("/fathom/meetings", async (req, res) => {
     }
 })
 
+//get transcipt
+router.get("/fathom/meetings/:recordingId/tasks", async (req, res) => {
+    // const { userId } = req.user
+    const { title = null } = req.query
+    const { recordingId } = req.params
+    // const tokens = getTokens(userId)  // get their stored token
+    const response = await fetch(`https://api.fathom.ai/external/v1/recordings/${recordingId}/transcript`, {
+        method: 'GET',
+        headers: {
+            'X-Api-Key': `${process.env.FATHOM_API_KEY}`
+        }
+    })
+    const data = await response.json()
+    const compressedTranscript = compressTranscript(data.transcript)
+    const formattedTranscript = toLLMFormat(compressedTranscript)
+    const transcriptWithTitle = title ? `Meeting Title: ${title}\n${formattedTranscript}` : `${formattedTranscript}`
+    const actionItems = await extractTasksWithLLM(transcriptWithTitle)
 
+    return res.status(200).json({ actionItems })
+})
+
+router.get("/fathom/meetings/:recordingId/summary", async (req, res) => {
+    const { recordingId } = req.params
+    const response = await fetch(`https://api.fathom.ai/external/v1/recordings/${recordingId}/summary`, {
+        method: 'GET',
+        headers: {
+            'X-Api-Key': `${process.env.FATHOM_API_KEY}`
+        }
+    })
+    const data = await response.json()
+    console.log("response", response)
+    console.log("response.json()", data)
+    return res.status(200).json({ data })
+})
+
+//      NOTION STUFF
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY })
+
+const growthinfi_pageId = "34ab2b8c-3b4f-804b-9c20-d3cf886162d5"
+const personal_pageId = "34f15e90-98fe-8049-a4a2-c2604fd3c198"
+
+router.post("/notion/createPage", async (req, res) => {
+    const { title, actionItems } = req.body
+    try {
+        const client = findClient(actionItems.client)
+        // client.notionPageId
+        console.log(client)
+        const response = await notion.pages.create({
+            parent: {
+                page_id: client.notionPageId || personal_pageId
+            },
+            properties: {
+                title: [
+                    { text: { content: title } }
+                ]
+            },
+            children: actionItems.tasks.flatMap(item => ([
+                {
+                    object: "block",
+                    type: "to_do",
+                    to_do: {
+                        rich_text: [{ type: "text", text: { content: item.title } }],
+                        checked: false
+                    }
+                },
+                ...(item.description ? [{
+                    object: "block",
+                    type: "paragraph",
+                    paragraph: {
+                        rich_text: [{ type: "text", text: { content: item.description }, annotations: { color: "gray" } }]
+                    }
+                }] : [])
+            ]))
+        })
+        return res.status(200).json({ success: true, pageId: response.id })
+    } catch (error) {
+        console.log("Notion error", error)
+        return res.status(500).json({ message: "Failed to create Notion page" })
+    }
+
+})
+
+
+//      TRELLO STUFF
 
 const trelloKey = process.env.TRELLO_KEY
 const trelloToken = process.env.TRELLO_TOKEN
@@ -111,6 +198,7 @@ router.post("/trello/cards", async (req, res) => {
         return res.status(500).json({ message: "Failed to create cards" })
     }
 })
+
 export default router;
 
 // for future updates
@@ -156,32 +244,3 @@ export default router;
 //     }
 // });
 
-// //get transcipt
-// router.get("/fathom/meetings/:recordingId/transcript", async (req, res) => {
-//     // const { userId } = req.user
-//     const { recordingId } = req.params
-//     // const tokens = getTokens(userId)  // get their stored token
-//     const response = await fetch(`https://api.fathom.ai/external/v1/recordings/${recordingId}/transcript`, {
-//         method: 'GET',
-//         headers: {
-//             'X-Api-Key': `${process.env.FATHOM_API_KEY}`
-//         }
-//     })
-//     console.log(response)
-//     const data = await response.json()
-//     return res.status(200).json({ data })
-// })
-
-// router.get("/fathom/meetings/:recordingId/summary", async (req, res) => {
-//     const { recordingId } = req.params
-//     const response = await fetch(`https://api.fathom.ai/external/v1/recordings/${recordingId}/summary`, {
-//         method: 'GET',
-//         headers: {
-//             'X-Api-Key': `${process.env.FATHOM_API_KEY}`
-//         }
-//     })
-//     console.log(response)
-//     const data = await response.json()
-//     return res.status(200).json({ data })
-
-// })

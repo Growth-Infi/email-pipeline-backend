@@ -35,7 +35,6 @@ app.use("/api/webhook", webhookRoutes); // no auth
 app.use("/api/tasks", tasksRoutes);
 app.use("/api", verifyApiKey, jobRoutes); // protected
 
-app.use("/api", verifyApiKey, jobRoutes); // protected
 
 app.get("/", (req, res) => {
   res.send("Pipeline backend running");
