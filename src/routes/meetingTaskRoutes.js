@@ -85,11 +85,12 @@ router.post("/notion/createPage", async (req, res) => {
     const { title, actionItems } = req.body
     try {
         const client = findClient(actionItems.client)
+        const targetPageId = client?.notionPageId || personal_pageId
         // client.notionPageId
         console.log(client)
         const response = await notion.pages.create({
             parent: {
-                page_id: client.notionPageId || personal_pageId
+                page_id: targetPageId
             },
             properties: {
                 title: [
